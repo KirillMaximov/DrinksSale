@@ -1,0 +1,155 @@
+﻿@using DrinksSale.Models
+@model UserModelView
+
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "User panel";
+}
+
+<div class="row shadow-lg">
+
+    <div class="row mb-2">
+        <div class="col-md-6">
+            <div class="row mb-2">
+                <div class="col-md-4">
+                    Внесенная сумма: <input class="form-control rounded-0" id="money" value="@Model.Condition.Money" />
+                </div >
+            </div>
+            <div class="row mb-2">
+                @foreach (var item in Model.Coins)
+                {
+                    @if (item.IsActive)
+                    {
+                        <div class="col-md-1">
+                            <button class="btn btn-outline-success rounded-0 coin" value="@item.Denomination"> @item.Denomination </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="col-md-1">
+                            <button disabled="disabled" class="btn btn-outline-danger rounded-0 coin" value="@item.Denomination"> @item.Denomination </button>
+                        </div>
+                    }
+                }
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <button class="btn btn-outline-primary rounded-0" id="cashback">Получить сдачу</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-2">
+        @foreach (var item in Model.Products)
+        {
+            <div class="card m-2" style="width: 18rem;">
+                <div class="card-body">
+                    <h5 class="card-title">@item.Name</h5>
+                    <p class="card-text">Цена: <lable class="price">@item.Price</lable></p>
+                    <p class="card-text">Осталось: <lable class="amount">@item.Amount</lable></p>
+                    @if (item.Amount > 0)
+                    {
+                        <button class="btn btn-outline-primary rounded-0 buy" value="@item.Id">Купить</button>
+                    }
+                    else
+                    {
+                        <button disabled="disabled" class="btn btn-outline-danger rounded-0 buy" value="@item.Id">Купить</button>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+</div>
+
+@section scripts
+{
+    <script>
+
+        $(document).ready(function(){
+
+            $('#cashback').click(function(){
+                let money = $('#money').val();
+
+                $.ajax({
+                    url: '/User/Cashback',
+                    type: 'POST',
+                    data: { "money": money },
+                    success: function (response) {
+
+                        alert(
+                            'Сдача: \n\r' +
+                            'Номинал 10: ' + response[10] + '\n\r' +
+                            'Номинал 5: ' + response[5] + '\n\r' +
+                            'Номинал 2: ' + response[2] + '\n\r' +
+                            'Номинал 1: ' + response[1]
+                        );
+
+                        let current = parseInt(money);
+                        current = current - response[10] * 10;
+                        current = current - response[5] * 5;
+                        current = current - response[2] * 2;
+                        current = current - response[1] * 1;
+
+                        $('#money').val(current);
+                        if (current > 0) alert('Нет монет для сдачи');
+                    }
+                });
+
+                
+            })
+
+            $('.coin').click(function(){
+                let money = parseInt($('#money').val()) + parseInt(this.value);
+
+                $.ajax({
+                    url: '/User/Condition',
+                    type: 'POST',
+                    data: { "money": this.value },
+                    success: function (response) {
+                        console.log(response);
+
+                        $('#money').val(money);
+                    }
+                });
+            })
+
+            $('.buy').click(function () {
+                let thisElement = this;
+
+                $.ajax({
+                    url: '/User/Buy',
+                    type: 'POST',
+                    data: { "id": thisElement.value, "money": $('#money').val() },
+                    success: function (response) {
+                        console.log(response);
+
+                        if (response == "") updateState(thisElement);
+                        else alert(response);
+                    }
+                });
+            })
+
+            function updateState(element)
+            {
+                console.log($(element));
+
+                let priceProduct = $(element).parent().children('.card-text').children('.price').text();
+                let amountProduct = $(element).parent().children('.card-text').children('.amount').text();
+
+                console.log(priceProduct);
+                console.log(amountProduct);
+
+                let currentMoney = parseInt($('#money').val());
+                let moneySpent = parseInt(priceProduct);
+                let newAmountProduct = parseInt(amountProduct) - 1;
+
+                $('#money').val(currentMoney - moneySpent);
+                $(element).parent().children('.card-text').children('.amount').text(newAmountProduct)
+            }
+        })
+
+    </script>
+}
+

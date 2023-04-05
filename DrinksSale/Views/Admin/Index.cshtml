@@ -1,0 +1,130 @@
+﻿@using DrinksSale.Models
+@model AdminModelView
+
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Admin panel";
+}
+
+<div class="row shadow-lg p-5 mb-4">
+    @foreach (var item in Model.Coins)
+    {
+        <div class="row form-check form-switch mb-2">
+            @if (item.IsActive)
+            {
+                <input class="form-check-input swithActive" checked="checked" type="checkbox" data-itemid="@item.Id">
+                <label class="form-check-label" for="swithActive">Монета номиналом @item.Denomination</label>
+            }
+            else
+            {
+                <input class="form-check-input swithActive" type="checkbox" data-itemid="@item.Id">
+                <label class="form-check-label" for="swithActive">Монета номиналом @item.Denomination</label>
+            }
+        </div>
+    }
+</div>
+
+<div class="row shadow-lg p-4">
+
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Наименование</th>
+                <th>Цена</th>
+                <th>Количество</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+
+            @foreach (var item in Model.Products)
+            {
+                <tr>
+                    <td>@item.Name</td>
+                    <td><input class="form-control rounded-0 price" placeholder="Цена" value="@item.Price" data-itemid="@item.Id" /></td>
+                    <td><input class="form-control rounded-0 amount" placeholder="Количество" value="@item.Amount" data-itemid="@item.Id" /></td>
+                    <td><button class="btn btn-outline-danger rounded-0 delete" data-itemid="@item.Id">Удалить напиток</button></td>
+                </tr>
+            }
+
+            @using (Html.BeginForm("AddProduct", "Admin", FormMethod.Post, new { @class = "form-horizontal", role = "form" }))
+            {
+                <tr>
+                    <td>@Html.TextBoxFor(p => p.Product.Name, new {@class = "form-control rounded-0", @placeholder = "Наименование"})</td>
+                    <td>@Html.TextBoxFor(p => p.Product.Price, new {@class = "form-control rounded-0", @placeholder = "Цена"})</td>
+                    <td>@Html.TextBoxFor(p => p.Product.Amount, new {@class = "form-control rounded-0", @placeholder = "Количество"})</td>
+                    <td><button class="btn btn-outline-primary rounded-0" type="submit">Добавить напиток</button></td>
+                </tr>
+            }
+
+        </tbody>
+    </table>
+
+    <button class="btn btn-outline-primary rounded-0" id="import">Добавить напиток</button>
+
+</div>
+
+@section scripts
+{
+    <script type="text/javascript">
+
+        $(document).ready(function(){
+            $('.swithActive').click(function(){
+                let id = $(this).attr('data-itemid');
+                let value = this.checked;
+
+                $.ajax({
+                    url: '/Admin/EditCoin',
+                    type: 'POST',
+                    data: { "id": id, "active": value },
+                    success: function (response) {
+                        if (!response) alert('Не удалось активировать/деактивировать монету');
+                    }
+                });
+            })
+
+            $('.price').keyup(function(){
+                let id = $(this).attr('data-itemid');
+                let value = this.value;
+
+                $.ajax({
+                    url: '/Admin/EditProduct',
+                    type: 'POST',
+                    data: { "id": id, "price": value },
+                    success: function (response) {
+                        if (!response) alert('Не удалось обновить цену напитка');
+                    }
+                });
+            })
+
+            $('.amount').keyup(function(){
+                let id = $(this).attr('data-itemid');
+                let value = this.value;
+
+                $.ajax({
+                    url: '/Admin/EditProduct',
+                    type: 'POST',
+                    data: { "id": id, "amount": value },
+                    success: function (response) {
+                        if (!response) alert('Не удалось обновить количество напитков');
+                    }
+                });
+            })
+
+            $('.delete').click(function(){
+                let id = $(this).attr('data-itemid');
+                let elem = $(this);
+                $.ajax({
+                    url: '/Admin/DeleteProduct',
+                    type: 'POST',
+                    data: { "id": id },
+                    success: function (response) {
+                        if (response) elem.parent().parent().remove();
+                        else alert('Не удалось удалить напиток');
+                    }
+                });
+            })
+        });
+
+    </script>
+}
